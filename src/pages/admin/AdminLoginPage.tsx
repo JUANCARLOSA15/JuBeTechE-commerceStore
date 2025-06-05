@@ -7,17 +7,26 @@ import toast from 'react-hot-toast';
 const AdminLoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
   const { login } = useAdmin();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (login(email, password)) {
-      navigate('/admin');
-      toast.success('Inicio de sesión exitoso');
-    } else {
-      toast.error('Credenciales inválidas');
+    setLoading(true);
+
+    try {
+      const success = await login(email, password);
+      if (success) {
+        navigate('/admin');
+        toast.success('Inicio de sesión exitoso');
+      } else {
+        toast.error('Acceso denegado. Solo usuarios administradores pueden acceder.');
+      }
+    } catch (error) {
+      toast.error('Error al iniciar sesión');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -48,6 +57,7 @@ const AdminLoginPage: React.FC = () => {
                 placeholder="Correo electrónico"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
               />
             </div>
             <div>
@@ -64,6 +74,7 @@ const AdminLoginPage: React.FC = () => {
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
             </div>
           </div>
@@ -71,9 +82,10 @@ const AdminLoginPage: React.FC = () => {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+              disabled={loading}
             >
-              Iniciar sesión
+              {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
             </button>
           </div>
         </form>
@@ -81,5 +93,3 @@ const AdminLoginPage: React.FC = () => {
     </div>
   );
 };
-
-export default AdminLoginPage;

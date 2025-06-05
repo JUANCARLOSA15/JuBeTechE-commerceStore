@@ -29,6 +29,7 @@ const ProductsPage = () => {
     active: true
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const categories = ['ropa', 'accesorios', 'papeleria'];
 
@@ -43,10 +44,7 @@ const ProductsPage = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
-      }
-
+      if (error) throw error;
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -62,55 +60,45 @@ const ProductsPage = () => {
     }));
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      const file = e.target.files?.[0];
-      if (!file) return;
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
 
+  const uploadImage = async (file: File): Promise<string> => {
+    try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `product-images/${fileName}`;
 
-      setIsLoading(true);
-
-      // First, check if the user has admin role
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !user.user_metadata?.role || user.user_metadata.role !== 'admin') {
-        throw new Error('Unauthorized - Admin access required');
-      }
-
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('products')
         .upload(filePath, file);
 
-      if (uploadError) {
-        throw uploadError;
-      }
+      if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
         .from('products')
         .getPublicUrl(filePath);
 
-      setFormData(prev => ({ ...prev, image: publicUrl }));
-      toast.success('Imagen subida correctamente');
+      return publicUrl;
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast.error('Error al subir la imagen. Verifica que tengas permisos de administrador.');
-    } finally {
-      setIsLoading(false);
+      throw error;
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      setIsLoading(true);
+    setIsLoading(true);
 
-      // Check admin role
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !user.user_metadata?.role || user.user_metadata.role !== 'admin') {
-        throw new Error('Unauthorized - Admin access required');
+    try {
+      let imageUrl = formData.image;
+
+      if (selectedFile) {
+        imageUrl = await uploadImage(selectedFile);
       }
 
       const productData = {
@@ -119,30 +107,27 @@ const ProductsPage = () => {
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
         category: formData.category,
-        image: formData.image,
+        image: imageUrl,
         active: formData.active
       };
 
-      let error;
-
       if (editingProduct) {
-        const { error: updateError } = await supabase
+        const { error } = await supabase
           .from('products')
           .update(productData)
           .eq('id', editingProduct.id);
-        error = updateError;
+
+        if (error) throw error;
+        toast.success('Producto actualizado correctamente');
       } else {
-        const { error: insertError } = await supabase
+        const { error } = await supabase
           .from('products')
           .insert([productData]);
-        error = insertError;
+
+        if (error) throw error;
+        toast.success('Producto creado correctamente');
       }
 
-      if (error) {
-        throw error;
-      }
-
-      toast.success(editingProduct ? 'Producto actualizado' : 'Producto creado');
       setIsModalOpen(false);
       setEditingProduct(null);
       setFormData({
@@ -154,10 +139,11 @@ const ProductsPage = () => {
         image: '',
         active: true
       });
+      setSelectedFile(null);
       fetchProducts();
     } catch (error) {
       console.error('Error saving product:', error);
-      toast.error('Error al guardar el producto. Verifica que tengas permisos de administrador.');
+      toast.error('Error al guardar el producto');
     } finally {
       setIsLoading(false);
     }
@@ -182,27 +168,18 @@ const ProductsPage = () => {
 
     try {
       setIsLoading(true);
-
-      // Check admin role
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || !user.user_metadata?.role || user.user_metadata.role !== 'admin') {
-        throw new Error('Unauthorized - Admin access required');
-      }
-
       const { error } = await supabase
         .from('products')
         .delete()
         .eq('id', id);
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
-      toast.success('Producto eliminado');
+      toast.success('Producto eliminado correctamente');
       fetchProducts();
     } catch (error) {
       console.error('Error deleting product:', error);
-      toast.error('Error al eliminar el producto. Verifica que tengas permisos de administrador.');
+      toast.error('Error al eliminar el producto');
     } finally {
       setIsLoading(false);
     }
@@ -278,7 +255,6 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* Modal de creación/edición */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -300,9 +276,9 @@ const ProductsPage = () => {
                       image: '',
                       active: true
                     });
+                    setSelectedFile(null);
                   }}
                   className="text-gray-500 hover:text-gray-700"
-                  disabled={isLoading}
                 >
                   <X className="h-6 w-6" />
                 </button>
@@ -316,16 +292,18 @@ const ProductsPage = () => {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={handleImageUpload}
+                    onChange={handleImageChange}
                     className="w-full"
                     disabled={isLoading}
                   />
-                  {formData.image && (
-                    <img
-                      src={formData.image}
-                      alt="Preview"
-                      className="mt-2 h-32 w-32 object-cover rounded"
-                    />
+                  {(formData.image || selectedFile) && (
+                    <div className="mt-2">
+                      <img
+                        src={selectedFile ? URL.createObjectURL(selectedFile) : formData.image}
+                        alt="Preview"
+                        className="h-32 w-32 object-cover rounded"
+                      />
+                    </div>
                   )}
                 </div>
 
@@ -435,6 +413,7 @@ const ProductsPage = () => {
                     onClick={() => {
                       setIsModalOpen(false);
                       setEditingProduct(null);
+                      setSelectedFile(null);
                     }}
                     className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                     disabled={isLoading}
