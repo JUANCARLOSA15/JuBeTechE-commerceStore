@@ -93,3 +93,5 @@ const AdminLoginPage: React.FC = () => {
     </div>
   );
 };
+
+export default AdminLoginPage
