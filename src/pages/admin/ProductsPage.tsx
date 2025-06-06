@@ -39,6 +39,7 @@ const ProductsPage = () => {
 
   const fetchProducts = async () => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -49,6 +50,8 @@ const ProductsPage = () => {
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Error al cargar los productos');
+    } finally {
+      setIsLoading(false);
     }
   };
 
