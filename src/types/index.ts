@@ -6,12 +6,18 @@ export interface Product {
   category: string;
   image: string;
   customizable: boolean;
+  stock: number;
+  active: boolean;
 }
 
 export interface CartItem {
   id: string;
   productId: string;
   quantity: number;
+  customization?: {
+    text?: string;
+    design?: string;
+  };
   printJob?: PrintJob;
 }
 

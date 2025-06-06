@@ -3,6 +3,7 @@ import AdminLayout from '../../components/admin/AdminLayout';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import { getAdminProducts } from '../../data/products';
 
 interface Product {
   id: string;
@@ -13,6 +14,7 @@ interface Product {
   category: string;
   image: string;
   active: boolean;
+  customizable?: boolean;
 }
 
 const ProductsPage = () => {
@@ -26,7 +28,8 @@ const ProductsPage = () => {
     stock: '',
     category: '',
     image: '',
-    active: true
+    active: true,
+    customizable: false
   });
   const [isLoading, setIsLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -39,16 +42,14 @@ const ProductsPage = () => {
 
   const fetchProducts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
+      setIsLoading(true);
+      const products = await getAdminProducts();
+      setProducts(products);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Error al cargar los productos');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -108,7 +109,8 @@ const ProductsPage = () => {
         stock: parseInt(formData.stock),
         category: formData.category,
         image: imageUrl,
-        active: formData.active
+        active: formData.active,
+        customizable: formData.customizable
       };
 
       if (editingProduct) {
@@ -137,7 +139,8 @@ const ProductsPage = () => {
         stock: '',
         category: '',
         image: '',
-        active: true
+        active: true,
+        customizable: false
       });
       setSelectedFile(null);
       fetchProducts();
@@ -158,7 +161,8 @@ const ProductsPage = () => {
       stock: product.stock.toString(),
       category: product.category,
       image: product.image,
-      active: product.active
+      active: product.active,
+      customizable: product.customizable || false
     });
     setIsModalOpen(true);
   };
@@ -200,6 +204,12 @@ const ProductsPage = () => {
           </button>
         </div>
 
+        {isLoading && (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
         <div className="bg-white rounded-lg shadow">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -220,7 +230,14 @@ const ProductsPage = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <img src={product.image} alt={product.name} className="h-12 w-12 object-cover rounded" />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">{product.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                        {product.customizable && (
+                          <div className="text-xs text-blue-600">Personalizable</div>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">S/ {product.price.toFixed(2)}</td>
                     <td className="px-6 py-4 whitespace-nowrap">{product.stock}</td>
                     <td className="px-6 py-4 whitespace-nowrap capitalize">{product.category}</td>
@@ -251,6 +268,11 @@ const ProductsPage = () => {
                 ))}
               </tbody>
             </table>
+            {products.length === 0 && !isLoading && (
+              <div className="text-center py-8 text-gray-500">
+                No hay productos registrados
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -274,7 +296,8 @@ const ProductsPage = () => {
                       stock: '',
                       category: '',
                       image: '',
-                      active: true
+                      active: true,
+                      customizable: false
                     });
                     setSelectedFile(null);
                   }}
@@ -393,18 +416,34 @@ const ProductsPage = () => {
                   </select>
                 </div>
 
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="active"
-                    checked={formData.active}
-                    onChange={(e) => setFormData(prev => ({ ...prev, active: e.target.checked }))}
-                    className="h-4 w-4 text-blue-600 rounded"
-                    disabled={isLoading}
-                  />
-                  <label className="ml-2 text-sm text-gray-700">
-                    Producto activo
-                  </label>
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="active"
+                      checked={formData.active}
+                      onChange={(e) => setFormData(prev => ({ ...prev, active: e.target.checked }))}
+                      className="h-4 w-4 text-blue-600 rounded"
+                      disabled={isLoading}
+                    />
+                    <label className="ml-2 text-sm text-gray-700">
+                      Producto activo
+                    </label>
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="customizable"
+                      checked={formData.customizable}
+                      onChange={(e) => setFormData(prev => ({ ...prev, customizable: e.target.checked }))}
+                      className="h-4 w-4 text-blue-600 rounded"
+                      disabled={isLoading}
+                    />
+                    <label className="ml-2 text-sm text-gray-700">
+                      Personalizable
+                    </label>
+                  </div>
                 </div>
 
                 <div className="flex justify-end space-x-3">

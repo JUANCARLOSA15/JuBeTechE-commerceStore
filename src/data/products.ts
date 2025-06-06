@@ -15,80 +15,97 @@ export const paperSizes = [
   { id: 'carta', name: 'Carta (216 x 279 mm)', priceMultiplier: 1.2 }
 ];
 
-// Función para obtener productos de Supabase
 export async function getProducts(): Promise<Product[]> {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*');
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false });
 
-  if (error) {
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
     console.error('Error fetching products:', error);
     return [];
   }
-
-  return data || [];
 }
 
-// Función para obtener un producto por ID
-export async function getProductById(id: string): Promise<Product | null> {
-  const { data, error } = await supabase
-    .from('products')
-    .select('*')
-    .eq('id', id)
-    .single();
+export async function getAdminProducts(): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (error) {
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching admin products:', error);
+    return [];
+  }
+}
+
+export async function getProductById(id: string): Promise<Product | null> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
     console.error('Error fetching product:', error);
     return null;
   }
-
-  return data;
 }
 
-// Función para crear un producto
 export async function createProduct(product: Omit<Product, 'id'>): Promise<Product | null> {
-  const { data, error } = await supabase
-    .from('products')
-    .insert([product])
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([product])
+      .select()
+      .single();
 
-  if (error) {
+    if (error) throw error;
+    return data;
+  } catch (error) {
     console.error('Error creating product:', error);
     return null;
   }
-
-  return data;
 }
 
-// Función para actualizar un producto
 export async function updateProduct(id: string, product: Partial<Product>): Promise<Product | null> {
-  const { data, error } = await supabase
-    .from('products')
-    .update(product)
-    .eq('id', id)
-    .select()
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .update(product)
+      .eq('id', id)
+      .select()
+      .single();
 
-  if (error) {
+    if (error) throw error;
+    return data;
+  } catch (error) {
     console.error('Error updating product:', error);
     return null;
   }
-
-  return data;
 }
 
-// Función para eliminar un producto
 export async function deleteProduct(id: string): Promise<boolean> {
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('id', id);
+  try {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
 
-  if (error) {
+    if (error) throw error;
+    return true;
+  } catch (error) {
     console.error('Error deleting product:', error);
     return false;
   }
-
-  return true;
 }
