@@ -40,6 +40,13 @@ const ProductsPage = () => {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.app_metadata?.role === 'admin') {
+        toast.error('No tienes permisos para ver esta página');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('products')
         .select('*')
@@ -98,6 +105,12 @@ const ProductsPage = () => {
     setIsLoading(true);
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.app_metadata?.role === 'admin') {
+        toast.error('No tienes permisos para realizar esta acción');
+        return;
+      }
+
       let imageUrl = formData.image;
 
       if (selectedFile) {
@@ -171,6 +184,12 @@ const ProductsPage = () => {
 
     try {
       setIsLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.app_metadata?.role === 'admin') {
+        toast.error('No tienes permisos para realizar esta acción');
+        return;
+      }
+
       const { error } = await supabase
         .from('products')
         .delete()
@@ -187,6 +206,16 @@ const ProductsPage = () => {
       setIsLoading(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>

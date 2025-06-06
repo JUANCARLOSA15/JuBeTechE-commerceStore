@@ -18,17 +18,19 @@ export const paperSizes = [
 // Function to get products from Supabase
 export async function getProducts(): Promise<Product[]> {
   try {
-    let query = supabase.from('products').select('*');
-    
-    // If user is not admin, only show active products
     const { data: { user } } = await supabase.auth.getUser();
-    const isAdmin = user?.user_metadata?.role === 'admin';
-    
+    const isAdmin = user?.app_metadata?.role === 'admin';
+
+    let query = supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
     if (!isAdmin) {
       query = query.eq('active', true);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching products:', error);
@@ -45,11 +47,20 @@ export async function getProducts(): Promise<Product[]> {
 // Function to get a product by ID
 export async function getProductById(id: string): Promise<Product | null> {
   try {
-    const { data, error } = await supabase
+    const { data: { user } } = await supabase.auth.getUser();
+    const isAdmin = user?.app_metadata?.role === 'admin';
+
+    let query = supabase
       .from('products')
       .select('*')
       .eq('id', id)
       .single();
+
+    if (!isAdmin) {
+      query = query.eq('active', true);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Error fetching product:', error);
@@ -66,6 +77,11 @@ export async function getProductById(id: string): Promise<Product | null> {
 // Function to create a product
 export async function createProduct(product: Omit<Product, 'id'>): Promise<Product | null> {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.app_metadata?.role === 'admin') {
+      throw new Error('Unauthorized');
+    }
+
     const { data, error } = await supabase
       .from('products')
       .insert([product])
@@ -87,6 +103,11 @@ export async function createProduct(product: Omit<Product, 'id'>): Promise<Produ
 // Function to update a product
 export async function updateProduct(id: string, product: Partial<Product>): Promise<Product | null> {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.app_metadata?.role === 'admin') {
+      throw new Error('Unauthorized');
+    }
+
     const { data, error } = await supabase
       .from('products')
       .update(product)
@@ -109,6 +130,11 @@ export async function updateProduct(id: string, product: Partial<Product>): Prom
 // Function to delete a product
 export async function deleteProduct(id: string): Promise<boolean> {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user?.app_metadata?.role === 'admin') {
+      throw new Error('Unauthorized');
+    }
+
     const { error } = await supabase
       .from('products')
       .delete()
