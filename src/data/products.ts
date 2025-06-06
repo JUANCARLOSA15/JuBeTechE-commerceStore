@@ -17,6 +17,7 @@ export const paperSizes = [
 
 export async function getProducts(): Promise<Product[]> {
   try {
+    console.log('Fetching products...');
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -27,6 +28,8 @@ export async function getProducts(): Promise<Product[]> {
       console.error('Supabase error:', error);
       throw error;
     }
+    
+    console.log('Products fetched successfully:', data?.length || 0);
     return data || [];
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -36,6 +39,7 @@ export async function getProducts(): Promise<Product[]> {
 
 export async function getAdminProducts(): Promise<Product[]> {
   try {
+    console.log('Fetching admin products...');
     const { data, error } = await supabase
       .from('products')
       .select('*')
@@ -45,6 +49,8 @@ export async function getAdminProducts(): Promise<Product[]> {
       console.error('Supabase error:', error);
       throw error;
     }
+    
+    console.log('Admin products fetched successfully:', data?.length || 0);
     return data || [];
   } catch (error) {
     console.error('Error fetching admin products:', error);
