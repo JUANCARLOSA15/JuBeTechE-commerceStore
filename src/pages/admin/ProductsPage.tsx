@@ -3,7 +3,6 @@ import AdminLayout from '../../components/admin/AdminLayout';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { getAdminProducts } from '../../data/products';
 
 interface Product {
   id: string;
@@ -40,14 +39,16 @@ const ProductsPage = () => {
 
   const fetchProducts = async () => {
     try {
-      setIsLoading(true);
-      const products = await getAdminProducts();
-      setProducts(products);
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Error al cargar los productos');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -183,16 +184,6 @@ const ProductsPage = () => {
       setIsLoading(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <AdminLayout>
-        <div className="flex justify-center items-center h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-        </div>
-      </AdminLayout>
-    );
-  }
 
   return (
     <AdminLayout>
