@@ -15,99 +15,71 @@ export const paperSizes = [
   { id: 'carta', name: 'Carta (216 x 279 mm)', priceMultiplier: 1.2 }
 ];
 
-// Function to get products from Supabase
 export async function getProducts(): Promise<Product[]> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    const isAdmin = user?.app_metadata?.role === 'admin';
-
-    let query = supabase
+    const { data, error } = await supabase
       .from('products')
       .select('*')
+      .eq('active', true)
       .order('created_at', { ascending: false });
 
-    if (!isAdmin) {
-      query = query.eq('active', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching products:', error);
-      return [];
-    }
-
+    if (error) throw error;
     return data || [];
   } catch (error) {
-    console.error('Error in getProducts:', error);
+    console.error('Error fetching products:', error);
     return [];
   }
 }
 
-// Function to get a product by ID
+export async function getAdminProducts(): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching admin products:', error);
+    return [];
+  }
+}
+
 export async function getProductById(id: string): Promise<Product | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    const isAdmin = user?.app_metadata?.role === 'admin';
-
-    let query = supabase
+    const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('id', id)
       .single();
 
-    if (!isAdmin) {
-      query = query.eq('active', true);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error('Error fetching product:', error);
-      return null;
-    }
-
+    if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Error in getProductById:', error);
+    console.error('Error fetching product:', error);
     return null;
   }
 }
 
-// Function to create a product
 export async function createProduct(product: Omit<Product, 'id'>): Promise<Product | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.app_metadata?.role === 'admin') {
-      throw new Error('Unauthorized');
-    }
-
     const { data, error } = await supabase
       .from('products')
       .insert([product])
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating product:', error);
-      return null;
-    }
-
+    if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Error in createProduct:', error);
+    console.error('Error creating product:', error);
     return null;
   }
 }
 
-// Function to update a product
 export async function updateProduct(id: string, product: Partial<Product>): Promise<Product | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.app_metadata?.role === 'admin') {
-      throw new Error('Unauthorized');
-    }
-
     const { data, error } = await supabase
       .from('products')
       .update(product)
@@ -115,39 +87,25 @@ export async function updateProduct(id: string, product: Partial<Product>): Prom
       .select()
       .single();
 
-    if (error) {
-      console.error('Error updating product:', error);
-      return null;
-    }
-
+    if (error) throw error;
     return data;
   } catch (error) {
-    console.error('Error in updateProduct:', error);
+    console.error('Error updating product:', error);
     return null;
   }
 }
 
-// Function to delete a product
 export async function deleteProduct(id: string): Promise<boolean> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.app_metadata?.role === 'admin') {
-      throw new Error('Unauthorized');
-    }
-
     const { error } = await supabase
       .from('products')
       .delete()
       .eq('id', id);
 
-    if (error) {
-      console.error('Error deleting product:', error);
-      return false;
-    }
-
+    if (error) throw error;
     return true;
   } catch (error) {
-    console.error('Error in deleteProduct:', error);
+    console.error('Error deleting product:', error);
     return false;
   }
 }

@@ -3,6 +3,7 @@ import AdminLayout from '../../components/admin/AdminLayout';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
+import { getAdminProducts } from '../../data/products';
 
 interface Product {
   id: string;
@@ -40,20 +41,8 @@ const ProductsPage = () => {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user?.app_metadata?.role === 'admin') {
-        toast.error('No tienes permisos para ver esta página');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProducts(data || []);
+      const products = await getAdminProducts();
+      setProducts(products);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Error al cargar los productos');
@@ -105,12 +94,6 @@ const ProductsPage = () => {
     setIsLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.app_metadata?.role === 'admin') {
-        toast.error('No tienes permisos para realizar esta acción');
-        return;
-      }
-
       let imageUrl = formData.image;
 
       if (selectedFile) {
@@ -184,12 +167,6 @@ const ProductsPage = () => {
 
     try {
       setIsLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.app_metadata?.role === 'admin') {
-        toast.error('No tienes permisos para realizar esta acción');
-        return;
-      }
-
       const { error } = await supabase
         .from('products')
         .delete()
