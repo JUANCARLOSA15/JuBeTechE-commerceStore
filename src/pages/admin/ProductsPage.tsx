@@ -3,7 +3,6 @@ import AdminLayout from '../../components/admin/AdminLayout';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
-import { getAdminProducts } from '../../data/products';
 
 interface Product {
   id: string;
@@ -43,8 +42,28 @@ const ProductsPage = () => {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const products = await getAdminProducts();
-      setProducts(products);
+      console.log('Fetching products from Supabase...');
+      
+      // Intentar obtener todos los productos sin filtros
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      console.log('Supabase response:', { data, error });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        toast.error(`Error al cargar productos: ${error.message}`);
+        return;
+      }
+
+      console.log('Products fetched successfully:', data?.length || 0);
+      setProducts(data || []);
+      
+      if (!data || data.length === 0) {
+        toast.info('No hay productos en la base de datos');
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Error al cargar los productos');
@@ -207,6 +226,7 @@ const ProductsPage = () => {
         {isLoading && (
           <div className="flex justify-center items-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2">Cargando productos...</span>
           </div>
         )}
 
@@ -270,7 +290,8 @@ const ProductsPage = () => {
             </table>
             {products.length === 0 && !isLoading && (
               <div className="text-center py-8 text-gray-500">
-                No hay productos registrados
+                <p className="text-lg mb-2">No hay productos registrados</p>
+                <p className="text-sm">Haz clic en "Nuevo Producto" para agregar el primer producto</p>
               </div>
             )}
           </div>
