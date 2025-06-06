@@ -45,7 +45,12 @@ export const AdminProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const { data: { user }, error } = await supabase.auth.getUser();
       
       if (error) {
-        console.error('Error getting user:', error);
+        // Check if the error is the expected "Auth session missing!" message
+        if (error.message === 'Auth session missing!') {
+          console.info('No active session found (user not authenticated)');
+        } else {
+          console.error('Error getting user:', error);
+        }
         setIsAuthenticated(false);
         setLoading(false);
         return;
