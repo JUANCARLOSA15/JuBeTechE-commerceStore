@@ -23,7 +23,10 @@ export async function getProducts(): Promise<Product[]> {
       .eq('active', true)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     return data || [];
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -38,7 +41,10 @@ export async function getAdminProducts(): Promise<Product[]> {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     return data || [];
   } catch (error) {
     console.error('Error fetching admin products:', error);
@@ -54,7 +60,10 @@ export async function getProductById(id: string): Promise<Product | null> {
       .eq('id', id)
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     return data;
   } catch (error) {
     console.error('Error fetching product:', error);
@@ -70,7 +79,10 @@ export async function createProduct(product: Omit<Product, 'id'>): Promise<Produ
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     return data;
   } catch (error) {
     console.error('Error creating product:', error);
@@ -87,7 +99,10 @@ export async function updateProduct(id: string, product: Partial<Product>): Prom
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     return data;
   } catch (error) {
     console.error('Error updating product:', error);
@@ -102,7 +117,10 @@ export async function deleteProduct(id: string): Promise<boolean> {
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase error:', error);
+      throw error;
+    }
     return true;
   } catch (error) {
     console.error('Error deleting product:', error);
